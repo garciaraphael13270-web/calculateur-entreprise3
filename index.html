@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur de Récupération</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div id="app" class="p-4 md:p-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="bg-white rounded-xl shadow-lg p-4 md:p-8">
+                <!-- En-tête -->
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                            <h1 class="text-2xl md:text-3xl font-bold text-slate-800">
+                                Calculateur de Récupération
+                            </h1>
+                            <p class="text-sm text-slate-500 mt-1">💾 Sauvegarde automatique</p>
+                        </div>
+                    </div>
+                    <button
+                        onclick="saveData()"
+                        class="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-md font-semibold"
+                    >
+                        💾 Sauvegarder
+                    </button>
+                </div>
+
+                <div id="lastSaved" class="mb-4 p-3 bg-green-50 rounded-lg border border-green-200 text-sm text-green-700 hidden">
+                    ✓ Dernière sauvegarde : <span id="saveTime"></span>
+                </div>
+
+                <!-- Barème -->
+                <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h2 class="font-semibold text-blue-900 mb-3">📊 Barème des pourcentages :</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-800">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-blue-400 rounded"></div>
+                            <span>10% sur 1 $ à 25 000 $</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-blue-500 rounded"></div>
+                            <span>20% sur 25 000 $ à 50 000 $</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-blue-600 rounded"></div>
+                            <span>30% sur 50 000 $ à 100 000 $</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-blue-700 rounded"></div>
+                            <span>40% sur 100 000 $ et plus</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ajouter entreprise -->
+                <div class="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <h3 class="font-semibold text-slate-700 mb-3">➕ Ajouter une entreprise</h3>
+                    <div class="flex gap-2">
+                        <input
+                            type="text"
+                            id="newCompanyInput"
+                            placeholder="Nom de l'entreprise"
+                            class="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            onkeypress="if(event.key === 'Enter') addCompany()"
+                        />
+                        <button
+                            onclick="addCompany()"
+                            class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors"
+                        >
+                            ➕ Ajouter
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tableau -->
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100">
+                                <th class="border border-slate-300 px-4 py-3 text-left font-semibold text-slate-700">Entreprise</th>
+                                <th class="border border-slate-300 px-4 py-3 text-left font-semibold text-slate-700">Montant ($)</th>
+                                <th class="border border-slate-300 px-4 py-3 text-left font-semibold text-slate-700">À récupérer</th>
+                                <th class="border border-slate-300 px-4 py-3 text-center font-semibold text-slate-700 w-20">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-emerald-50">
+                                <td colspan="2" class="border border-slate-300 px-4 py-4 text-right font-bold text-slate-800 text-lg">
+                                    TOTAL À RÉCUPÉRER :
+                                </td>
+                                <td colspan="2" class="border border-slate-300 px-4 py-4 font-bold text-emerald-700 text-lg">
+                                    <span id="totalAmount">0,00 $US</span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="mt-6 p-4 bg-slate-50 rounded-lg">
+                    <p class="text-sm text-slate-600">
+                        💡 <strong>Astuce :</strong> Vos données sont sauvegardées automatiquement. Cliquez sur "Sauvegarder" pour enregistrer manuellement.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const initialCompanies = [
+            "Pearl's", "Stock Buck", "Beeker's Garage", "Bahama's",
+            "Luchetti's", "LTD Sud", "LTD Mirror Park", "Gruppe6"
+        ];
+
+        let companies = [...initialCompanies];
+        let amounts = {};
+
+        // Initialiser les montants
+        companies.forEach(c => amounts[c] = '');
+
+        function calculateRecovery(amount) {
+            const num = parseFloat(amount) || 0;
+            let recovery = 0;
+
+            if (num <= 25000) {
+                recovery = num * 0.10;
+            } else if (num <= 50000) {
+                recovery = (25000 * 0.10) + ((num - 25000) * 0.20);
+            } else if (num <= 100000) {
+                recovery = (25000 * 0.10) + (25000 * 0.20) + ((num - 50000) * 0.30);
+            } else {
+                recovery = (25000 * 0.10) + (25000 * 0.20) + (50000 * 0.30) + ((num - 100000) * 0.40);
+            }
+
+            return recovery;
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2
+            }).format(value);
+        }
+
+        function updateTotal() {
+            let total = 0;
+            companies.forEach(company => {
+                total += calculateRecovery(amounts[company]);
+            });
+            document.getElementById('totalAmount').textContent = formatCurrency(total);
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            companies.forEach(company => {
+                const recovery = calculateRecovery(amounts[company]);
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-slate-50 transition-colors';
+                row.innerHTML = `
+                    <td class="border border-slate-300 px-4 py-3 font-medium text-slate-700">${company}</td>
+                    <td class="border border-slate-300 px-4 py-3">
+                        <input
+                            type="number"
+                            value="${amounts[company]}"
+                            placeholder="0"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            min="0"
+                            step="0.01"
+                            oninput="updateAmount('${company}', this.value)"
+                        />
+                    </td>
+                    <td class="border border-slate-300 px-4 py-3 font-semibold text-emerald-700">
+                        ${formatCurrency(recovery)}
+                    </td>
+                    <td class="border border-slate-300 px-4 py-3 text-center">
+                        <button
+                            onclick="removeCompany('${company}')"
+                            class="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Supprimer"
+                        >
+                            🗑️
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateTotal();
+        }
+
+        function updateAmount(company, value) {
+            amounts[company] = value;
+            renderTable();
+        }
+
+        function addCompany() {
+            const input = document.getElementById('newCompanyInput');
+            const name = input.value.trim();
+            
+            if (name && !companies.includes(name)) {
+                companies.push(name);
+                amounts[name] = '';
+                input.value = '';
+                renderTable();
+            }
+        }
+
+        function removeCompany(company) {
+            companies = companies.filter(c => c !== company);
+            delete amounts[company];
+            renderTable();
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem('recovery_companies', JSON.stringify(companies));
+                localStorage.setItem('recovery_amounts', JSON.stringify(amounts));
+                const now = new Date().toLocaleString('fr-FR');
+                localStorage.setItem('recovery_last_saved', now);
+                
+                document.getElementById('saveTime').textContent = now;
+                document.getElementById('lastSaved').classList.remove('hidden');
+                
+                alert('✅ Données sauvegardées avec succès !');
+            } catch (error) {
+                alert('❌ Erreur lors de la sauvegarde');
+            }
+        }
+
+        function loadData() {
+            try {
+                const savedCompanies = localStorage.getItem('recovery_companies');
+                const savedAmounts = localStorage.getItem('recovery_amounts');
+                const savedTime = localStorage.getItem('recovery_last_saved');
+
+                if (savedCompanies) {
+                    companies = JSON.parse(savedCompanies);
+                }
+                if (savedAmounts) {
+                    amounts = JSON.parse(savedAmounts);
+                }
+                if (savedTime) {
+                    document.getElementById('saveTime').textContent = savedTime;
+                    document.getElementById('lastSaved').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.log('Première utilisation');
+            }
+            renderTable();
+        }
+
+        // Charger les données au démarrage
+        loadData();
+    </script>
+</body>
+</html>
