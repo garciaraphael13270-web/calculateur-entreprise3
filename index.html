@@ -86,6 +86,7 @@
                     <table class="w-full border-collapse">
                         <thead>
                             <tr class="bg-slate-100">
+                                <th class="border border-slate-300 px-4 py-3 text-left font-semibold text-slate-700">✅ Récupéré</th>
                                 <th class="border border-slate-300 px-4 py-3 text-left font-semibold text-slate-700">Entreprise</th>
                                 <th class="border border-slate-300 px-4 py-3 text-left font-semibold text-slate-700">Montant ($)</th>
                                 <th class="border border-slate-300 px-4 py-3 text-left font-semibold text-slate-700">Tranche</th>
@@ -97,7 +98,7 @@
                         </tbody>
                         <tfoot>
                             <tr class="bg-emerald-50">
-                                <td colspan="3" class="border border-slate-300 px-4 py-4 text-right font-bold text-slate-800 text-lg">
+                                <td colspan="4" class="border border-slate-300 px-4 py-4 text-right font-bold text-slate-800 text-lg">
                                     TOTAL À RÉCUPÉRER :
                                 </td>
                                 <td colspan="2" class="border border-slate-300 px-4 py-4 font-bold text-emerald-700 text-lg">
@@ -110,7 +111,7 @@
 
                 <div class="mt-6 p-4 bg-slate-50 rounded-lg">
                     <p class="text-sm text-slate-600">
-                        💡 <strong>Exemple :</strong> Pour 60 000 $ (Tranche 3), vous récupérez 60 000 × 30% = 18 000 $
+                        💡 <strong>Astuce :</strong> Cochez ✅ quand l'argent est récupéré. Le montant sera automatiquement déduit du total et la ligne sera surlignée en vert.
                     </p>
                 </div>
             </div>
@@ -125,9 +126,13 @@
 
         let companies = [...initialCompanies];
         let amounts = {};
+        let recovered = {};
 
-        // Initialiser les montants
-        companies.forEach(c => amounts[c] = '');
+        // Initialiser les montants et statuts
+        companies.forEach(c => {
+            amounts[c] = '';
+            recovered[c] = false;
+        });
 
         function calculateRecovery(amount) {
             const num = parseFloat(amount) || 0;
@@ -168,10 +173,17 @@
         function updateTotal() {
             let total = 0;
             companies.forEach(company => {
-                const recovery = calculateRecovery(amounts[company]);
-                total += recovery.amount;
+                if (!recovered[company]) {
+                    const recovery = calculateRecovery(amounts[company]);
+                    total += recovery.amount;
+                }
             });
             document.getElementById('totalAmount').textContent = formatCurrency(total);
+        }
+
+        function toggleRecovered(company) {
+            recovered[company] = !recovered[company];
+            renderTable();
         }
 
         function renderTable() {
@@ -180,10 +192,23 @@
 
             companies.forEach((company, index) => {
                 const recovery = calculateRecovery(amounts[company]);
+                const isRecovered = recovered[company];
+                
                 const row = document.createElement('tr');
-                row.className = 'hover:bg-slate-50 transition-colors';
+                row.className = isRecovered ? 'bg-green-50 hover:bg-green-100 transition-colors' : 'hover:bg-slate-50 transition-colors';
+                
                 row.innerHTML = `
-                    <td class="border border-slate-300 px-4 py-3 font-medium text-slate-700">${company}</td>
+                    <td class="border border-slate-300 px-4 py-3 text-center">
+                        <input
+                            type="checkbox"
+                            id="check_${index}"
+                            ${isRecovered ? 'checked' : ''}
+                            class="w-5 h-5 text-emerald-600 rounded cursor-pointer"
+                        />
+                    </td>
+                    <td class="border border-slate-300 px-4 py-3">
+                        <span class="font-medium ${isRecovered ? 'line-through text-slate-400' : 'text-slate-700'}">${company}</span>
+                    </td>
                     <td class="border border-slate-300 px-4 py-3">
                         <input
                             type="number"
@@ -198,7 +223,7 @@
                     <td class="border border-slate-300 px-4 py-3 font-semibold text-blue-700" id="tranche_${index}">
                         ${recovery.tranche}
                     </td>
-                    <td class="border border-slate-300 px-4 py-3 font-semibold text-emerald-700" id="recovery_${index}">
+                    <td class="border border-slate-300 px-4 py-3 font-semibold ${isRecovered ? 'text-slate-400 line-through' : 'text-emerald-700'}" id="recovery_${index}">
                         ${formatCurrency(recovery.amount)}
                     </td>
                     <td class="border border-slate-300 px-4 py-3 text-center">
@@ -213,7 +238,12 @@
                 `;
                 tbody.appendChild(row);
 
-                // Ajouter l'événement après l'insertion dans le DOM
+                // Événement checkbox
+                document.getElementById(`check_${index}`).addEventListener('change', function() {
+                    toggleRecovered(company);
+                });
+
+                // Événement input montant
                 document.getElementById(`amount_${index}`).addEventListener('input', function(e) {
                     amounts[company] = e.target.value;
                     const recovery = calculateRecovery(e.target.value);
@@ -233,6 +263,7 @@
             if (name && !companies.includes(name)) {
                 companies.push(name);
                 amounts[name] = '';
+                recovered[name] = false;
                 input.value = '';
                 renderTable();
             }
@@ -242,6 +273,7 @@
             const company = companies[index];
             companies.splice(index, 1);
             delete amounts[company];
+            delete recovered[company];
             renderTable();
         }
 
@@ -249,6 +281,7 @@
             try {
                 localStorage.setItem('recovery_companies', JSON.stringify(companies));
                 localStorage.setItem('recovery_amounts', JSON.stringify(amounts));
+                localStorage.setItem('recovery_recovered', JSON.stringify(recovered));
                 const now = new Date().toLocaleString('fr-FR');
                 localStorage.setItem('recovery_last_saved', now);
                 
@@ -265,6 +298,7 @@
             try {
                 const savedCompanies = localStorage.getItem('recovery_companies');
                 const savedAmounts = localStorage.getItem('recovery_amounts');
+                const savedRecovered = localStorage.getItem('recovery_recovered');
                 const savedTime = localStorage.getItem('recovery_last_saved');
 
                 if (savedCompanies) {
@@ -272,6 +306,16 @@
                 }
                 if (savedAmounts) {
                     amounts = JSON.parse(savedAmounts);
+                }
+                if (savedRecovered) {
+                    recovered = JSON.parse(savedRecovered);
+                } else {
+                    // Initialiser recovered pour les entreprises existantes
+                    companies.forEach(c => {
+                        if (recovered[c] === undefined) {
+                            recovered[c] = false;
+                        }
+                    });
                 }
                 if (savedTime) {
                     document.getElementById('saveTime').textContent = savedTime;
