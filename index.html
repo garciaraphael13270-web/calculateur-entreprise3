@@ -162,7 +162,7 @@
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
 
-            companies.forEach(company => {
+            companies.forEach((company, index) => {
                 const recovery = calculateRecovery(amounts[company]);
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-slate-50 transition-colors';
@@ -171,20 +171,20 @@
                     <td class="border border-slate-300 px-4 py-3">
                         <input
                             type="number"
+                            id="amount_${index}"
                             value="${amounts[company]}"
                             placeholder="0"
                             class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
                             min="0"
                             step="0.01"
-                            oninput="updateAmount('${company}', this.value)"
                         />
                     </td>
-                    <td class="border border-slate-300 px-4 py-3 font-semibold text-emerald-700">
+                    <td class="border border-slate-300 px-4 py-3 font-semibold text-emerald-700" id="recovery_${index}">
                         ${formatCurrency(recovery)}
                     </td>
                     <td class="border border-slate-300 px-4 py-3 text-center">
                         <button
-                            onclick="removeCompany('${company}')"
+                            onclick="removeCompany(${index})"
                             class="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
                             title="Supprimer"
                         >
@@ -193,14 +193,17 @@
                     </td>
                 `;
                 tbody.appendChild(row);
+
+                // Ajouter l'événement après l'insertion dans le DOM
+                document.getElementById(`amount_${index}`).addEventListener('input', function(e) {
+                    amounts[company] = e.target.value;
+                    const recovery = calculateRecovery(e.target.value);
+                    document.getElementById(`recovery_${index}`).textContent = formatCurrency(recovery);
+                    updateTotal();
+                });
             });
 
             updateTotal();
-        }
-
-        function updateAmount(company, value) {
-            amounts[company] = value;
-            renderTable();
         }
 
         function addCompany() {
@@ -215,8 +218,9 @@
             }
         }
 
-        function removeCompany(company) {
-            companies = companies.filter(c => c !== company);
+        function removeCompany(index) {
+            const company = companies[index];
+            companies.splice(index, 1);
             delete amounts[company];
             renderTable();
         }
