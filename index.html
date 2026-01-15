@@ -41,20 +41,23 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-800">
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 bg-blue-400 rounded"></div>
-                            <span>10% sur 1 $ à 25 000 $</span>
+                            <span><strong>Tranche 1 :</strong> 10% de 0 $ à 25 000 $</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 bg-blue-500 rounded"></div>
-                            <span>20% sur 25 000 $ à 50 000 $</span>
+                            <span><strong>Tranche 2 :</strong> 20% de 25 001 $ à 50 000 $</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 bg-blue-600 rounded"></div>
-                            <span>30% sur 50 000 $ à 100 000 $</span>
+                            <span><strong>Tranche 3 :</strong> 30% de 50 001 $ à 100 000 $</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 bg-blue-700 rounded"></div>
-                            <span>40% sur 100 000 $ et plus</span>
+                            <span><strong>Tranche 4 :</strong> 40% de 100 001 $ et plus</span>
                         </div>
+                    </div>
+                    <div class="mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                        ℹ️ Le pourcentage s'applique sur le montant TOTAL selon la tranche où il se trouve
                     </div>
                 </div>
 
@@ -85,6 +88,7 @@
                             <tr class="bg-slate-100">
                                 <th class="border border-slate-300 px-4 py-3 text-left font-semibold text-slate-700">Entreprise</th>
                                 <th class="border border-slate-300 px-4 py-3 text-left font-semibold text-slate-700">Montant ($)</th>
+                                <th class="border border-slate-300 px-4 py-3 text-left font-semibold text-slate-700">Tranche</th>
                                 <th class="border border-slate-300 px-4 py-3 text-left font-semibold text-slate-700">À récupérer</th>
                                 <th class="border border-slate-300 px-4 py-3 text-center font-semibold text-slate-700 w-20">Action</th>
                             </tr>
@@ -93,7 +97,7 @@
                         </tbody>
                         <tfoot>
                             <tr class="bg-emerald-50">
-                                <td colspan="2" class="border border-slate-300 px-4 py-4 text-right font-bold text-slate-800 text-lg">
+                                <td colspan="3" class="border border-slate-300 px-4 py-4 text-right font-bold text-slate-800 text-lg">
                                     TOTAL À RÉCUPÉRER :
                                 </td>
                                 <td colspan="2" class="border border-slate-300 px-4 py-4 font-bold text-emerald-700 text-lg">
@@ -106,7 +110,7 @@
 
                 <div class="mt-6 p-4 bg-slate-50 rounded-lg">
                     <p class="text-sm text-slate-600">
-                        💡 <strong>Astuce :</strong> Vos données sont sauvegardées automatiquement. Cliquez sur "Sauvegarder" pour enregistrer manuellement.
+                        💡 <strong>Exemple :</strong> Pour 60 000 $ (Tranche 3), vous récupérez 60 000 × 30% = 18 000 $
                     </p>
                 </div>
             </div>
@@ -127,19 +131,30 @@
 
         function calculateRecovery(amount) {
             const num = parseFloat(amount) || 0;
-            let recovery = 0;
+            let percentage = 0;
+            let tranche = '';
 
-            if (num <= 25000) {
-                recovery = num * 0.10;
+            if (num === 0) {
+                return { amount: 0, percentage: 0, tranche: '-' };
+            } else if (num <= 25000) {
+                percentage = 0.10;
+                tranche = 'T1 (10%)';
             } else if (num <= 50000) {
-                recovery = (25000 * 0.10) + ((num - 25000) * 0.20);
+                percentage = 0.20;
+                tranche = 'T2 (20%)';
             } else if (num <= 100000) {
-                recovery = (25000 * 0.10) + (25000 * 0.20) + ((num - 50000) * 0.30);
+                percentage = 0.30;
+                tranche = 'T3 (30%)';
             } else {
-                recovery = (25000 * 0.10) + (25000 * 0.20) + (50000 * 0.30) + ((num - 100000) * 0.40);
+                percentage = 0.40;
+                tranche = 'T4 (40%)';
             }
 
-            return recovery;
+            return {
+                amount: num * percentage,
+                percentage: percentage * 100,
+                tranche: tranche
+            };
         }
 
         function formatCurrency(value) {
@@ -153,7 +168,8 @@
         function updateTotal() {
             let total = 0;
             companies.forEach(company => {
-                total += calculateRecovery(amounts[company]);
+                const recovery = calculateRecovery(amounts[company]);
+                total += recovery.amount;
             });
             document.getElementById('totalAmount').textContent = formatCurrency(total);
         }
@@ -179,8 +195,11 @@
                             step="0.01"
                         />
                     </td>
+                    <td class="border border-slate-300 px-4 py-3 font-semibold text-blue-700" id="tranche_${index}">
+                        ${recovery.tranche}
+                    </td>
                     <td class="border border-slate-300 px-4 py-3 font-semibold text-emerald-700" id="recovery_${index}">
-                        ${formatCurrency(recovery)}
+                        ${formatCurrency(recovery.amount)}
                     </td>
                     <td class="border border-slate-300 px-4 py-3 text-center">
                         <button
@@ -198,7 +217,8 @@
                 document.getElementById(`amount_${index}`).addEventListener('input', function(e) {
                     amounts[company] = e.target.value;
                     const recovery = calculateRecovery(e.target.value);
-                    document.getElementById(`recovery_${index}`).textContent = formatCurrency(recovery);
+                    document.getElementById(`tranche_${index}`).textContent = recovery.tranche;
+                    document.getElementById(`recovery_${index}`).textContent = formatCurrency(recovery.amount);
                     updateTotal();
                 });
             });
